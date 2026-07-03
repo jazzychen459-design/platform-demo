@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UGC内容审核</title>
+    <style>
+        :root {
+            --primary: #165dff;
+            --primary-hover: #4080ff;
+            --primary-light: #e8f3ff;
+            --text-1: #1d2129;
+            --text-2: #4e5969;
+            --text-3: #86909c;
+            --border: #e5e6eb;
+            --bg-body: #f2f3f5;
+            --bg-card: #ffffff;
+            --bg-muted: #f7f8fa;
+            --radius: 4px;
+            --font-base: 14px;
+            --danger: #f53f3f;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-1);
+            font-size: var(--font-base);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            height: 48px;
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+
+        .header-icon {
+            color: var(--primary);
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background: var(--primary-light);
+            border-radius: 4px;
+        }
+
+        .tag-review {
+            background-color: var(--primary-light);
+            color: var(--primary);
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 2px;
+            font-weight: normal;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            color: var(--text-2);
+            font-size: 13px;
+        }
+
+        .link-text {
+            color: var(--primary);
+            cursor: pointer;
+            text-decoration: none;
+        }
+        
+        .link-text:hover {
+            color: var(--primary-hover);
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+            padding: 8px;
+            overflow: hidden;
+        }
+
+        .col {
+            background-color: var(--bg-card);
+            border-radius: var(--radius);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .col-left {
+            flex: 0 0 30%;
+            min-width: 350px;
+            padding: 16px;
+        }
+
+        .col-mid {
+            flex: 0 0 40%;
+            padding: 20px 24px;
+        }
+
+        .col-right {
+            flex: 1;
+            padding: 16px;
+            border-left: 1px solid var(--border);
+        }
+
+        /* Left Col: Video */
+        .video-container {
+            background-color: #000;
+            border-radius: var(--radius);
+            aspect-ratio: 9/16;
+            max-height: 60vh;
+            width: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        
+        .video-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .video-content img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .video-controls {
+            height: 40px;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            color: white;
+            font-size: 12px;
+            gap: 12px;
+        }
+
+        .jump-link-container {
+            margin-top: 12px;
+            text-align: left;
+        }
+
+        /* Middle Col: Info */
+        .info-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--danger); /* Using red as in Figure 2 to make it stand out, or keep standard dark. Fig 2 has red title text. We'll use a strong color. */
+            margin-bottom: 24px;
+            line-height: 1.5;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .info-title-black {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--text-1);
+            margin-bottom: 24px;
+            line-height: 1.5;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .info-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .info-row {
+            display: flex;
+            line-height: 1.5;
+        }
+
+        .info-label {
+            width: 120px;
+            color: var(--text-3);
+            flex-shrink: 0;
+        }
+
+        .info-value {
+            color: var(--text-1);
+            flex: 1;
+            word-break: break-all;
+        }
+
+        /* Right Col: Operations */
+        .op-section {
+            margin-bottom: 24px;
+        }
+
+        .op-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .badge-blue {
+            background-color: var(--primary-light);
+            color: var(--primary);
+            padding: 4px 8px;
+            border-radius: 2px;
+            font-size: 13px;
+        }
+
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 12px;
+            display: block;
+        }
+        
+        .form-label .required {
+            color: var(--danger);
+            margin-left: 4px;
+        }
+
+        /* Radio & Checkbox Styles */
+        .radio-group, .checkbox-group {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .radio-item, .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            color: var(--text-2);
+        }
+
+        input[type="radio"], input[type="checkbox"] {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+            accent-color: var(--primary);
+        }
+
+        /* Error Feedback Section */
+        .feedback-panel {
+            margin-top: 20px;
+            border: 1px solid var(--danger);
+            padding: 16px;
+            border-radius: var(--radius);
+            background-color: #fff0f0;
+            display: none; /* Hidden by default */
+        }
+
+        .feedback-panel.active {
+            display: block;
+        }
+        
+        .sub-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 16px;
+            border-radius: var(--radius);
+            margin-top: 16px;
+            display: none;
+        }
+        
+        .sub-panel.active {
+            display: block;
+        }
+
+        .reason-title {
+            font-size: 13px;
+            color: var(--text-2);
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .reason-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .input-group {
+            margin-top: 16px;
+        }
+
+        .text-input {
+            width: 100%;
+            height: 36px;
+            padding: 0 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            outline: none;
+            transition: border-color 0.2s;
+            font-size: 14px;
+        }
+
+        .text-input:focus {
+            border-color: var(--primary);
+        }
+
+        /* Footer */
+        .footer {
+            height: 56px;
+            background-color: var(--bg-card);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 24px;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .footer-left {
+            position: absolute;
+            left: 24px;
+            display: flex;
+            gap: 12px;
+        }
+        
+        .footer-right {
+            position: absolute;
+            right: 24px;
+            color: var(--text-3);
+            font-size: 13px;
+        }
+
+        .btn {
+            height: 32px;
+            padding: 0 16px;
+            border: 1px solid var(--border);
+            background-color: var(--bg-card);
+            color: var(--text-1);
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-text {
+            border: none;
+            color: var(--primary);
+        }
+
+        .btn-text:hover {
+            background-color: transparent;
+            color: var(--primary-hover);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="header-icon">☰</div>
+            <span>UGC-抖音内容标签-劣势圈层</span>
+            <span class="tag-review">审核模式</span>
+        </div>
+        <div class="header-right">
+            <a href="#" class="link-text">复制单任务链接</a>
+            <span>本页已停留 00:00:26</span>
+        </div>
+    </header>
+
+    <!-- Main -->
+    <main class="main">
+        <!-- Left: Video -->
+        <div class="col col-left">
+            <div class="video-container">
+                <div class="video-content">
+                    <!-- Placeholder for video thumbnail -->
+                    <div style="color: #666; text-align: center;">
+                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M16 12V36L38 24L16 12Z" fill="currentColor" opacity="0.8"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="video-controls">
+                    <span>||</span>
+                    <span>00:20 / 01:27</span>
+                    <span style="margin-left: auto;">1x</span>
+                    <span>🔊</span>
+                    <span>⛶</span>
+                </div>
+            </div>
+            
+            <div class="jump-link-container">
+                <a href="#" class="link-text" style="display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 500;">
+                    <svg width="14" height="14" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M28 6H42V20" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M42 6L21 27" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 14H11C8.23858 14 6 16.2386 6 19V37C6 39.7614 8.23858 42 11 42H29C31.7614 42 34 39.7614 34 37V26" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    点击跳转网页版链接
+                </a>
+            </div>
+        </div>
+
+        <!-- Mid: Info -->
+        <div class="col col-mid">
+            <!-- Emphasized Title Row -->
+            <div class="info-title-black">
+                2026年的独库公路已经开通啦，你什么时候来呢？ #新疆旅游#新疆旅游攻略#独库公路 #旅行推荐官
+            </div>
+            
+            <div class="info-list">
+                <div class="info-row">
+                    <div class="info-label">内容ID</div>
+                    <div class="info-value">7646750368353301499</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">发布日期</div>
+                    <div class="info-value">2026/6/2 18:56:50</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">抖音分类标签</div>
+                    <div class="info-value">旅行, 旅行推荐与攻略, 城市推荐/种草, 国内城市推荐/种草</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">垂类/圈层/主题</div>
+                    <div class="info-value">旅游出行/自驾游/自驾游路线推荐</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">作品VV</div>
+                    <div class="info-value">97.9万</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">POI名称</div>
+                    <div class="info-value">--</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">POI ID</div>
+                    <div class="info-value">--</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">是否挂车</div>
+                    <div class="info-value">否</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">是否挂团购</div>
+                    <div class="info-value">否</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">是否AIGC</div>
+                    <div class="info-value">否</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Operations -->
+        <div class="col col-right">
+            <div class="op-section">
+                <div class="op-header">
+                    <span style="color: var(--text-2);">挂载名称</span>
+                    <span class="badge-blue">旅游出行-自驾游-自驾游路线推荐</span>
+                </div>
+
+                <label class="form-label">挂载名称是否正确<span class="required">*</span></label>
+                <div class="radio-group" style="margin-bottom: 8px;">
+                    <label class="radio-item">
+                        <input type="radio" name="is_correct" value="yes"> 是
+                    </label>
+                    <label class="radio-item">
+                        <input type="radio" name="is_correct" value="no"> 否
+                    </label>
+                </div>
+
+                <!-- Hidden Feedback Panel (Shown when 'no' is selected) -->
+                <div class="feedback-panel" id="feedbackPanel">
+                    <label class="form-label">选择挂载不准确的层级（多选）<span class="required">*</span></label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="level1" value="1"> 一级
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="level2" value="2"> 二级
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="level3" value="3"> 三级
+                        </label>
+                    </div>
+
+                    <!-- Level 1 Reasons -->
+                    <div class="sub-panel" id="reasonLevel1">
+                        <div class="reason-title">一级挂载不准确的原因</div>
+                        <div class="reason-grid">
+                            <label class="checkbox-item"><input type="checkbox"> hashtag导致识别错误</label>
+                            <label class="checkbox-item"><input type="checkbox"> 标题导致识别错误</label>
+                            <label class="checkbox-item"><input type="checkbox"> ai写真/ai创作导致识别错误</label>
+                            <label class="checkbox-item"><input type="checkbox"> 多主旨内容导致识别错误</label>
+                            <label class="checkbox-item"><input type="checkbox"> 垂类识别错误</label>
+                            <label class="checkbox-item"><input type="checkbox"> 其他</label>
+                        </div>
+                    </div>
+
+                    <!-- Level 2 Reasons -->
+                    <div class="sub-panel" id="reasonLevel2">
+                        <div class="reason-title">二级挂载不准确的原因</div>
+                        <div class="reason-grid">
+                            <label class="checkbox-item"><input type="checkbox"> hashtag导致识别错误</label>
+                            <label class="checkbox-item"><input type="checkbox"> 标题导致识别错误</label>
+                            <label class="checkbox-item"><input type="checkbox"> ai写真/ai创作导致识别错误</label>
+                            <label class="checkbox-item"><input type="checkbox"> 多主旨内容导致识别错误</label>
+                            <label class="checkbox-item"><input type="checkbox"> 圈层识别错误</label>
+                            <label class="checkbox-item"><input type="checkbox"> 缺少圈层标签</label>
+                            <label class="checkbox-item"><input type="checkbox"> 其他</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Text Input for correct label -->
+                    <div class="input-group">
+                        <label class="form-label">填写正确的三级标签</label>
+                        <input type="text" class="text-input" placeholder="请输入正确的标签名称">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-left">
+            <!-- Left side empty or zoom tools from original, but omitted for simplicity -->
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <button class="btn btn-text">提交任务且离开</button>
+            <button class="btn btn-text">押后审核</button>
+            <button class="btn">上一页</button>
+            <button class="btn btn-primary">提交</button>
+        </div>
+        <div class="footer-right">
+            试「空格」键直接提交
+        </div>
+    </footer>
+
+    <!-- Interactive Logic -->
+    <script>
+        const radioRadios = document.querySelectorAll('input[name="is_correct"]');
+        const feedbackPanel = document.getElementById('feedbackPanel');
+        
+        const level1Check = document.getElementById('level1');
+        const level2Check = document.getElementById('level2');
+        const reasonLevel1 = document.getElementById('reasonLevel1');
+        const reasonLevel2 = document.getElementById('reasonLevel2');
+
+        // Toggle Feedback Panel based on Radio
+        radioRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (e.target.value === 'no') {
+                    feedbackPanel.classList.add('active');
+                } else {
+                    feedbackPanel.classList.remove('active');
+                }
+            });
+        });
+
+        // Toggle Level 1 Reasons
+        level1Check.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                reasonLevel1.classList.add('active');
+            } else {
+                reasonLevel1.classList.remove('active');
+            }
+        });
+
+        // Toggle Level 2 Reasons
+        level2Check.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                reasonLevel2.classList.add('active');
+            } else {
+                reasonLevel2.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
